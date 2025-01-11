@@ -478,7 +478,7 @@ end
 /draw {
   gsave 
     newpath % ensures the currentpath/point is empty
-    initclip % revert to the default clipping region
+    %initclip % doing this is too aggressive; too much policy
     exec 
   grestore
 } bind def 
