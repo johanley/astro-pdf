@@ -1,0 +1,680 @@
+%!PS-Adobe-3.0
+%%Title: ${TITLE}
+%%Version: 1.0
+%%Creator: ${CREATOR}
+%%CreationDate: ${CREATION_DATE}
+%%LanguageLevel: 3.0
+%%DocumentMedia: Plain ${DIMENSIONS_FLOAT} 60 white ()
+%%DocumentNeededResources: font Georgia Georgia-Italic Georgia-Bold
+%%BoundingBox: 0 0 ${DIMENSIONS_INTEGER}
+%%Orientation: Portrait 
+%%Pages: ${NUM_PAGES}
+%%EndComments 
+
+% -- END OF THE HEADER --
+
+% DSC: 
+%  - Document Structure Convention (DSC) comments start with '%%' and are case-sensitive.
+%  - No extra lines are allowed in the header (above).
+%  - Include a space after any colon ':' character in the header.
+
+% Lines in PostScript should not be more than 255 characters.
+
+%%BeginDefaults 
+%%EndDefaults
+
+%%BeginProlog
+  % Only procedure definitions go here.
+  % Include even if empty.
+
+
+
+% DEBUGGING -----
+
+/whereami {
+  currentpoint 
+  (Y:) == ==
+  (X:) == ==
+} bind def  
+
+% for debugging only
+% pass a dict; shows its keys and values on stdout
+/list-dict {
+ { == ==  } forall
+} bind def
+
+% show a box 0,0 to 100,100
+% assumes the translation to the origin has already happened
+% show various coord values
+/show-working-area {
+  0 0 pmoveto (0,0) show 
+  100 100 pmoveto (100,100) show 
+  0  0  warea (wd) get    warea (ht) get    rectstroke 
+  0 50 pmoveto (0,50) show
+  50 50 pmoveto (50,50) show
+  50 0 pmoveto (50,0) show
+} def
+
+
+
+
+% MISCELLANEOUS -----
+
+% pass two numbers; a value and a percent
+% example '70 15 pct' is 15% of 70
+/pct {
+ 0.01 mul mul
+} bind def
+
+% percentage of the working-area's width
+/pct-wd {
+  warea (wd) get exch pct
+} bind def
+
+% percentage of the working-area's height
+/pct-ht {
+  warea (ht) get exch pct
+} bind def
+
+% num round-to-nearest
+% round a number to the nearest multiple of some integer
+/nearest {
+  /integer exch def
+  /num exch def
+  num integer div  % 16/5 = 3.2
+  round            % 3.0
+  integer mul      % 15.0
+  cvi              % 15
+} bind def
+
+% is-odd-page is-not-rotated 
+% start a new page, with default regular font and a working-area
+% AFTER THIS CALL, YOU SHOULD USUALLY BE WORKING IN PERCENT-COORDS.
+/this-page {
+  % a starter font
+  100 regular-font
+  working-area
+} def
+
+
+% TEXT AND FONTS -------
+
+% create a new font from an existing one, which uses the ISOLatin1Encoding instead of the standard encoding
+% NOTE: THE ENCODING OF THIS POSTSCRIPT FILE IS ITSELF 8859-1 = ISOLatin1.
+% Calling this allows (almost all) accented characters in West European languages to be treated as any other character.
+% https://stackoverflow.com/questions/270672/unicode-in-postscript
+% new-name old-name
+/latinize {
+  findfont
+  dup length dict 
+  begin
+    % copy everything in the font's dict except for the FID (a unique id for a font)
+    { 1 index /FID ne {def}{pop pop} ifelse } forall
+    /Encoding ISOLatin1Encoding def % override the encoding entry in this dict
+    currentdict  % push this font-dict onto the operand stack
+  end
+  definefont  % internally sets a FID (font-id) for the new font
+  pop % remove the new font object from the operand stack
+} bind def
+
+% num: percentage for the default font-size (example: 125 or 75)
+/regular-font {
+  default-font-size exch pct
+  my-fonts (regular) get exch selectfont  
+} bind def
+
+% num: percentage for the default font-size (example: 125 or 75)
+/italic-font {
+  default-font-size exch pct
+  my-fonts (italic) get exch selectfont  
+} bind def
+
+% num: percentage for the default font-size (example: 125 or 75)
+/bold-font {
+  default-font-size exch pct
+  my-fonts (bold) get exch selectfont  
+} bind def
+
+
+% (a) (b) -> (ab)  
+% concatenate two strings
+% https://en.wikibooks.org/wiki/PostScript_FAQ/Programming_PostScript#How_to_concatenate_strings?
+/concat-str { 
+  exch dup length    
+  2 index length add string    
+  dup dup 4 2 roll copy length
+  4 -1 roll putinterval
+} bind def  
+
+
+% return the width/height, dx/dy of the given text
+% this is useful for centering in various ways
+% https://stackoverflow.com/questions/3618194/how-to-determine-string-height-in-postscript luser droog
+/text-dim {
+  gsave
+    % the bounding box of the text
+    false charpath flattenpath pathbbox % x0 y0 x1 y1
+  grestore
+  3 -1 roll sub % x0 x1 dy
+  3 1 roll sub % dy -dx
+  -1 mul % dy dx
+  exch % dx dy
+}
+bind def
+
+% text px py
+% center text horizontally only
+/p-ctr-x {
+  pmoveto
+  dup text-dim pop % text dx
+  -2 div % text -dx/2
+  0 rmoveto % text
+  show
+} bind def
+
+% text px py
+% center text vertically only
+/p-ctr-y {
+  pmoveto
+  dup text-dim exch pop % text dy
+  -2 div % text -dy/2
+  0 exch rmoveto % text
+  show
+} bind def
+
+% text px py
+% center text horizontally AND vertically
+/p-ctr-xy {
+  pmoveto
+  show-ctr-xy
+} bind def
+
+% text 
+% center text horizontally AND vertically at the currentpoint
+/show-ctr-xy {
+  dup text-dim % text dx dy
+  -2 div % text dx -dy/2
+  exch % text -dy/2 dx
+  -2 div exch % text -dx/2 -dy/2
+  rmoveto % text
+  show
+} bind def
+
+% text 
+% center text horizontally at the currentpoint
+/show-ctr-x {
+  dup text-dim pop % text dx
+  -2 div % text -dx/2
+  0 rmoveto % text
+  show
+} bind def
+
+
+% text
+% the text must be in UPPER CASE.
+% Like 'show', but use a small-caps font, rescaled from the current font.
+% Derived from the 'Tutorial and Cookbook'
+% https://archive.org/details/PSBlueBook/page/181/mode/2up?view=theater
+/small-caps-show {
+3 dict begin
+  /yscale {
+    /capheight (X) text-dim exch pop def % discard dx
+    /xheight (x) text-dim exch pop def % discard dx
+    xheight capheight xheight sub 3 div add capheight div % the calc for the y-rescaling
+  } def
+  gsave
+    currentfont [.9 0 0 yscale 0 0] makefont setfont  % 90 percent in the x-direction, variable for the y-direction
+    show          % show the string with the new font
+    currentpoint  % ensures the currentpoint behaves like 'show' (because of the grestore): put it on the stack
+  grestore 
+  moveto          % move to the end of the text (placed on the stack, above)
+end    
+} def
+
+
+
+
+% LINE BREAKS -------
+
+
+% text (string) is-poem (boolean)
+/break-text-into-lines {
+  /yline 0 def
+  {
+    {0 yline moveto show % the text on the stack
+     /yline yline default-leading sub def
+    } break-poetry-into-lines
+  }
+  {230  % linewidth
+    {0 yline moveto show % the text on the stack
+     /yline yline default-leading sub def
+    } break-into-lines
+  }
+  ifelse
+}
+def
+
+% From the 'Tutorial and Cookbook'
+% https://archive.org/details/PSBlueBook/page/181/mode/2up?view=theater
+% textstring linewidth {..end-of-line-proc..}  
+% This proc chops up text into lines, and leaves each line on the stack.
+% The passed proc takes the current line as its one arg; it defines what's done after each line is 'finished': show and moveto.
+/break-into-lines { 
+20 dict begin
+  /wordbreak ( ) def  % space char identifies breaks between words
+  /proc exch def 
+  /linewidth exch def
+  /textstring exch def
+  /breakwidth wordbreak stringwidth pop def
+  /curwidth 0 def   % width of the current line
+  /lastwordbreak 0 def % index of the most recent word break found in the textstring
+  /startchar 0 def     % index of the first char for the current line
+  /restoftext textstring def  % temp variable that holds the remaining result of the search operator (see below)
+  % look up the PS 'search' operator. It pushes multiple results onto the operand stack.
+  { % loop: search for the first wordbreak in restoftext
+    restoftext wordbreak search     % this puts several things on the stack, the last being a success/fail boolean, which is here tested by ifelse
+      { % wordbreak found by the search
+        /nextword exch def pop 
+        /restoftext exch def 
+        /wordwidth nextword stringwidth pop def  % pop discards the dy part of the pair dx, dy
+        curwidth wordwidth add linewidth gt {    
+          % finish the current line, pass the line to the given proc, by extracting it from the given string (getinterval)
+          textstring startchar lastwordbreak startchar sub getinterval proc
+          % bookkeeping for the next line, which starts with what we just found
+          /startchar lastwordbreak def
+          /curwidth wordwidth breakwidth add def 
+        }
+        { % keep going: the current line is less than the given limit
+         /curwidth curwidth wordwidth add breakwidth add def
+        } 
+        ifelse
+        /lastwordbreak lastwordbreak nextword length add 1 add def
+      }
+      { % no match found for the wordbreak
+        % leave the restoftext on the stack, and stop looping
+        pop exit}  
+      ifelse % testing for a match found for the wordbreak
+  } loop
+  % tidying up: the last bit of remaining text  
+  /lastchar textstring length def 
+  textstring startchar lastchar startchar sub getinterval proc
+  yline % put the final yline on the stack
+end
+} def
+
+
+% textstring {..end-of-line-proc..} 
+% This proc chops up text into lines delimited explicitly by a given char, and leaves each line on the stack.
+% The length of the line is arbitrary; the caller needs to keep the line length within his own limits.
+% The passed proc takes the current line as its one arg; it defines what's done after each line is 'finished': show and moveto.
+/break-poetry-into-lines { 
+20 dict begin
+  /linebreak (|) def  % identifies breaks between lines; assumed to be of length 1
+  /showline exch def 
+  /textstring exch def
+  
+  /startidx 0 def % index of the start of the current line (without including the break)
+  /endidx 0 def     % index of the end of the current line (including the break)
+  /restoftext textstring def  % the text after the current line break; never starts with the break
+  
+  % the PS 'search' operator pushes multiple results onto the operand stack.
+  { % loop: search for the first linebreak in restoftext
+    restoftext linebreak search     % this puts several things on the stack, the last being a success/fail boolean, which is here tested by ifelse
+      { % linebreak found by the search
+        /line exch def  % before the line break
+        pop  % discard the line-break itself
+        /restoftext exch def % after the line break
+        % show the line: pass the line to the given proc, by extracting it from the given string (getinterval)
+        /endidx startidx line length add def
+        /linelength endidx startidx sub def
+        textstring startidx linelength getinterval showline
+        % get ready for the next iteration:
+        /startidx endidx 1 add def  % skip over the break char
+      }
+      { % no match found for the linebreak
+        % discard the 'pre', stop looping, and leave the restoftext on the stack
+        pop exit
+      } ifelse % testing for a match found for the linebreak
+  } loop
+  % tidying up: the last line of text
+  restoftext showline
+  yline % put the final yline on the stack
+end
+} def
+
+
+
+
+
+
+% GEOMETRY -------
+
+
+% is-odd-page, is-not-rotated
+% def's a working area dict named 'warea'.
+% there's quite a bit of logic here; there are 8 branches, with ifelse's nested 3 deep
+%
+% The WORKING AREA is a box on the page in which all (or nearly all) of the content lives.
+% It consists of the whole page minus the margins.
+% The margins can be (and usually are) ASYMMETRICAL; this addresses the needs of the spine, where the margin should usually be bigger.
+% 
+% IMPORTANT: the top left of the working-area is assigned the percent-coords (100, 100); its origin is (0, 0).
+% For any non-square format, this IMPLIES ASYMMETRY BETWEEN X AND Y. 
+% This is because percent-x relates to the working-area-width, while percent-y relates to working-area-height.
+% The percent-coords 50 50 mean the middle/center of the working-area; when the margins are not all the same, then that point is NOT the center of the page!
+%
+% This code is BIASED in favour of bindings along the LONGEST DIMENSION.
+/the-working-area {
+  /warea << (origin-x) 0 (origin-y) 0 (wd) 0 (ht) 0 (is-not-rotated) true >> def % default values; overridden below
+  page-height page-width gt {
+    % book, portrait default, east-west margins
+    { % is-not-rotated
+      warea (wd) page-width margin sub margin-spine sub put
+      warea (ht) page-height 2 margin mul sub put
+      warea (origin-y) margin put
+      { % is-odd-page
+        warea (origin-x) margin-spine put
+      } 
+      { % is-even-page
+        warea (origin-x) margin put
+      } ifelse % odd-even
+    } 
+    { % is-rotated
+      warea (is-not-rotated) false put
+      warea (origin-y) margin put
+      warea (wd) page-height 2 margin mul sub put
+      warea (ht) page-width margin sub margin-spine sub put
+      { % is-odd-page
+        warea (origin-x) page-width margin sub put
+      } 
+      { % is-even-page 
+        warea (origin-x) page-width margin-spine sub put
+      } ifelse % odd-even
+    } ifelse % is-not-rotated, is-rotated
+  }
+  {
+    % calendar, landscape default, north-south margins
+    { %is-not-rotated
+      warea (origin-x) margin put
+      warea (wd) page-width 2 margin mul sub put
+      warea (ht) page-height margin sub margin-spine sub put
+      { % is-odd-page
+       warea (origin-y) margin put
+      }
+      { % is-even-page
+       warea (origin-y) margin-spine put
+      } ifelse % odd-even
+    }
+    { %is-rotated
+      warea (is-not-rotated) false put
+      warea (origin-x) page-width margin sub put
+      warea (wd) page-height margin sub margin-spine sub put
+      warea (ht) page-width 2 margin mul sub put
+      { %is-odd-page
+        warea (origin-y) margin put
+      }
+      { %is-even-page
+        warea (origin-y) margin-spine put
+      } ifelse % odd-even
+    } ifelse % is-not-rotated, is-rotated
+  } ifelse % default-portrait, default-landscape
+} bind def
+
+
+% in: is-odd-page, is-not-rotated
+% calc the work area and 'def' it as /warea
+% translate origin to the origin of workarea
+% rotate the user coords if needed
+% AFTER THIS CALL, YOU SHOULD USUALLY BE WORKING IN PERCENT-COORDS.
+/working-area {
+  the-working-area  % defines the dict, fills it with data
+  warea (origin-x) get warea (origin-y) get translate  % move the origin 
+  warea (is-not-rotated) get not {90 rotate} if  % rotate if needed
+} bind def 
+
+
+% translate percent-x percent-y (with respect to the working-area) into x and y
+% the percentages are with respect to the working-area, NOT to the page-geometry
+% the origin is assumed to already by at the origin of the working-area
+/pxy-to-xy {
+  warea (ht) get exch pct
+  exch  % bring px to the top
+  warea (wd) get exch pct
+  exch % swap x and y, to get the right order 
+} bind def
+
+% 'ALIASES' FOR OPERATORS, TO WORK WITH PERCENTAGES INSTEAD OF ABSOLUTES
+/pmoveto {
+  pxy-to-xy moveto
+} bind def
+/prmoveto {
+  pxy-to-xy rmoveto
+} bind def
+/ptranslate {
+  pxy-to-xy translate
+} bind def
+/plineto {
+  pxy-to-xy lineto
+} bind def
+/prlineto {
+  pxy-to-xy rlineto
+} bind def
+% rescale both axes as a percent of the working-area height
+/pscale {
+  warea (ht) get exch pct dup scale
+} bind def
+% parc
+% pcurveto
+% OTHERS?
+
+
+
+
+% DRAWING -----
+
+% exec a proc inside a gsave-grestore pair
+% pass an executable array - same as a proc literal {...}
+% (this is a way of reducing code repetition of gsave-grestore pairs)
+/draw {
+  gsave 
+    newpath % ensures the currentpath/point is empty
+    initclip % revert to the default clipping region
+    exec 
+  grestore
+} bind def 
+
+% Workaround for non-uniform stroking of line widths in a grid.
+% Addresses off-by-one pixel issues.
+% Green Book page 147.
+/nice-moveto {
+  transform
+  round exch round exch 
+  itransform 
+  moveto
+} bind def
+/nice-lineto {
+  transform
+  round exch round exch
+  itransform
+  lineto
+} bind def
+
+
+
+
+
+% --- ITEMS SPECIFIC TO AN OUTPUT ---
+
+% draw a simple flower, as a pleasing design
+% at the currentpoint and the current scale
+% example:
+%  4.25 inch 4.25 inch translate
+%  1 inch 1 inch scale
+%  flower
+/flower {
+1 dict begin
+  /flower-petal {
+    newpath
+      0 0 moveto      % center
+      1 0 translate   % mark a straight line 
+      15 rotate       % rotate the axis (no mark)
+      0 15 sin translate  % go 'up' a bit, to the center of the arc
+      0 0 15 sin -90 90 arc  % mark the arc
+    closepath         % back to the center
+  } def
+  0.02 setlinewidth
+  0.85 setgray
+  12 {
+    gsave
+     flower-petal gsave fill grestore  % the gray insides
+     0 setgray stroke  % the dark outline
+    grestore
+    30 rotate
+  } repeat
+end
+} bind def
+
+
+% A calendar month.
+% The month-name is placed above a 7x7 square grid.
+% The grid has both the day-names and the numbers.
+% The day-names and numbers are centered in each cell of the grid.
+% The origin is the bottom left corner of the grid.
+% Pass the month name, the number data, and the size of the (square) grid.
+% Example, where the data is an array of 42 strings = 7d x 6w strings for the day-numbers:
+%  (January) data 72 day-names draw-month
+/draw-calendar-month {
+20 dict begin
+  /day-names exch def
+  /month-size exch def
+  /cell-size month-size 7 div def % square! used for both dx and dy
+  /dy-month-name 1.5 pct-ht def % gap between month-name and day-names
+  % In other languages, these would need to be translated of course:
+
+  % box for the month (debugging)
+  %0 0 month-size month-size rectstroke
+  /data exch def
+  sbuff cvs /month-name exch def   % cvs: to convert (coerced!) literal-keys /January back into strings (January)!
+  % row-or-col idx to the corresponding y-or-x coordinate in the middle of the cell
+  /idx-to-coord {
+    cell-size mul  cell-size 2 div   sub  
+  } def
+  % pass row col, translate to x y
+  /row-col-to-xy {
+     /col exch def
+     /row exch def
+     col idx-to-coord % x from col
+     month-size row idx-to-coord sub % y from row
+  } def
+  % pass row, col, text
+  /show-centered-at {
+    /text exch def
+    row-col-to-xy moveto
+    text show-ctr-xy
+  } def
+  % month-name above the grid
+  month-size 2 div   month-size dy-month-name add   moveto 
+  month-name   show-ctr-xy
+  % day-names in row 1
+  1 1 7 {
+    /col exch def
+    1 col   day-names col get   show-centered-at
+  }
+  for
+  % pass row, col
+  /daynum-at {
+    /col exch def
+    /row exch 1 sub def
+    /idx 7 row mul 7 sub col add def
+    data idx 1 sub get
+  } def
+  % show the day-numbers
+  2 1 7 {
+    /row exch def
+    1 1 7 {
+      /col exch def
+      row col   row col daynum-at  show-centered-at
+    } for
+  } for
+end  
+} def  % don't bind this! it has data
+
+% translate first to the lower left of the grid for January.
+% months-map day-names-map
+% pass an array of 12 maps for each month, plus a map for the 7 weekday-names
+% months-map: key is month-name, value is an array of 42 strings = 6 x 7 representing the day-numbers
+/draw-calendar-year {
+10 dict begin
+  /day-names exch def
+  /month-size 25 pct-wd def % square! used for dx, dy
+  /count 0 def
+  /dx 1.1 month-size mul def
+  /dy 1.2 month-size mul def
+  { {month-size day-names draw-calendar-month} forall % each month has a single key-value pair in its dict
+    /count count 1 add def
+    count 3 mod 0 ne {
+      dx 0 translate % same row, but to the right
+    }{
+      % new row needed; translate 'back to the left, and down one row'
+      2 dx mul neg  dy neg   translate
+    } ifelse
+  } forall % an array of dicts
+end
+} def % don't bind this! it has data
+
+
+
+
+%%EndProlog 
+
+
+%%BeginSetup               
+  % modify items in the graphics state that won't be changed by initgraphics/showpage/erasepage
+  % often: userdict and setpagedevice 
+  
+  /page-width ${PAGE_WIDTH} 72 mul def
+  /page-height ${PAGE_HEIGHT} 72 mul def % absolute values
+  % the tolerance is 5 units in each dimension
+  % the order of the width/height actually doesn't matter
+  <</PageSize [page-width  page-height]>> setpagedevice  
+  % the following assumes that 3 margins are the same, and 1 margin is bigger because it's nearest to the spine:
+  /margin page-height 3 pct def 
+  /margin-spine margin 150 pct def 
+  
+  % CORE TYPEFACES used in the project
+  % these are all 'latinized': they use the ISOLatin1 encoding (same as 8859-1), instead of the default encoding
+  % WARNING: YOUR POSTCRIPT FILES MUST BE ENCODED IN 8859-1 AS WELL. 
+  % You can use Notepad++ to do conversions of the encoding of a file.
+  %/MyRegular /Times-Roman latinize
+  %/MyItalic /Times-Italic latinize
+  %/MyBold /Times-Bold latinize
+  /MyRegular /Georgia latinize
+  /MyItalic /Georgia-Italic latinize
+  /MyBold /Georgia-Bold latinize
+  /my-fonts <<
+    (regular) /MyRegular
+    (italic)  /MyItalic
+    (bold)    /MyBold
+  >> def
+  /default-font-size 12 def  % absolute
+  /default-leading default-font-size 100 pct def  % Adobe's default is 120
+  % variations in the font size, as percentages
+  /bigger 175 def 
+  /biggest 275 def 
+  /smaller 50 def 
+  /smallest 25 def 
+
+  % used to define a working-area  
+  /is-odd-page true def
+  /is-even-page false def
+  /is-not-rotated true def
+  /is-rotated false def
+
+  % a buffer for converting objects to strings, usually used with the 'cvs' operator
+  /sbuff 50 string def
+%%EndSetup 
+
+${ALL_PAGES}
+
+%%Trailer    
+%%EOF

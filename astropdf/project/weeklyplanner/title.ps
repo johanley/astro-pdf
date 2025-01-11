@@ -1,0 +1,20 @@
+gsave
+
+1 dict begin
+ /px 50 def
+
+ bigger regular-font
+ ${TITLE} px 80  p-ctr-xy
+ 
+ biggest regular-font
+ ${LOCATION} px 74  p-ctr-xy
+ ${YEAR} px 67.5  p-ctr-xy
+
+ 
+ % draw a simple, pleasing design
+ px 37.5 ptranslate
+ 7 pscale
+ {flower} draw
+end 
+
+grestore

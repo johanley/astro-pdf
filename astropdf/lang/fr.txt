@@ -1,0 +1,3 @@
+# Translations from English into French.
+# This file should be encoded in UTF-8.
+For example = Par exemple

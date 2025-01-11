@@ -1,0 +1,12 @@
+%%Page: ${PAGE_NUM} ${PAGE_NUM}
+
+%%BeginPageSetup 
+ /pgsave save def     
+ ${ODD_OR_EVEN_PAGE_NUM} ${ROTATED_OR_NOT} this-page
+%%EndPageSetup
+
+${PAGE_CONTENT}
+ 
+pgsave restore
+showpage
+%%PageTrailer

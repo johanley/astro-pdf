@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head><title>AstroPdf</title></head>
+<body>
+ Generate PDF files containing localized, customizable data, with a focus on astronomy and weather data.
+ 
+ <P>When run as a stand-alone program, the top-level class for generating files is <code>astropdf.Build</code>.
+ 
+ <P>The main design goals are:
+ <ul>
+  <li>allow <b>customization</b> for a given location and year.
+  <li>produce output that's ready to be sent to a printer, without modification.
+ </ul>
+ 
+ <P>General remarks:
+ <ul>
+  <li>the code is written in the PostScript and Java programming languages
+  <li>the data comes from three sources: direct computation, .csv data files downloaded manually from the web, 
+  and .csv file exports from the MICA tool (phenomena) and Occult.exe (occultations).
+  <li>the output is a PostScript .ps file, which is then converted by the system to a PDF format, for the final output.
+  <li>a third-party tool is needed to convert PostScript .ps files to .pdf files (Ghostscript or Adobe's Distiller).
+  <li>some high-level settings can be changed in a configuration file, without making any code changes.
+  <li>for best printing results, you should use a high quality, high resolution printer; many home printers lack high resolution
+ </ul>
+ 
+ <P>The good parts:
+ <ul>
+  <li>customizable for different locations and years
+  <li>the output width and height of the PDF is easily changed by a config setting, and the layout reacts dynamically to the new dimensions 
+  <li>a mechanism is in place for translation into different languages
+  <li>a textual config file is used to let people change some settings without changing any code
+  <li>a single config file can be used to generate different kinds of output: calendar, planner, almanac
+ </ul>
+ 
+ <P>The bad parts:
+ <ul>
+  <li>complex layouts and typesetting of text are not supported. 
+  For projects in which only small snippets of text occur, this is not a problem (almanacs, calendars, weekly planners).
+  <li>right-to-left text flow: no testing has been done for right-to-left languages, such as Hebrew and Arabic. This tool likely does not work for such languages.
+  <li>the Text class (used in tranlation) is not suited for use in a servlet environment (since it loads data into a static Map)  
+ </ul>
+ 
+ 
+ An effort has been made to make as few approximations as possible:
+ <ul>
+  <li>for predicting sunrise and sunset, a special altitude of -0.9 degrees has been added, just below 0.0 degrees. 
+  This accounts for refraction at the horizon, the Sun's mean semi-diameter, and for the observer being 
+  about 2 meters above the real horizon. (See the Explanatory Supplement to the Ephemeris, 1961, page 401).
+  Sunrise and sunset correspond to the center of the Sun's disk being at that altitude.
+  For the stars, the rise/set altitude is near -0.57 degrees, not -0.9. 
+  For the Moon, the rise/set altitude is in the range of +0.08 to +0.18 degrees, because of its large horizontal parallax.
+  <li>the star catalog has precession applied to a given year, configured in a text file. 
+  The effect of precession is detectable on a small-scale star chart, even after only 20 years.
+ </ul>
+ 
+ <P>Notes about the implementation:
+ <ul>
+  <li>all .java files use the UTF-8 encoding; your dev environment must also treat them as UTF-8
+  <li>all .ps files, containing PostScript snippets, use the 8859-1 encoding. It's important to use that encoding when reading/writing such 
+  files; if you don't, then accented characters will appear garbled text with weird characters.
+  <li>the fonts are embedded in the PDF
+  <li>the author has run this code only on Windows OS, not on Linux
+  <li>the logging can be made silent simply by changing one setting in the {@link astropdf.util.LogUtil} class. 
+  <li>the model used here has NO TEXT FLOW BETWEEN PAGES. The content of each page is "well known", and won't overflow to the next page.
+  When presenting mostly data and little text, this is acceptable.
+ </ul>
+ 
+ <P>Some data I used in building this tool:
+ <ul>
+  <li>stars: the star catalog is from <a href='https://github.com/johanley/star-catalog'>this project</a>
+  <li>planets: the VSOP87D data for the planets, by <a href='https://ui.adsabs.harvard.edu/abs/1988A%26A...202..309B/abstract'>Bretagnon and Francou</a>.
+  <li>Moon: the abridged form of ELP 2000-82 as published in Astronomical Algorithms, by Meeus 1991.
+  <li>precession: algorithm and tables for P/Q, X/Y, and p/epsilon from 
+    <a href='https://ui.adsabs.harvard.edu/abs/2011A%26A...534A..22V/abstract'>this paper</a> by Vondrák, Capitaine, and Wallace.
+ </ul>
+ 
+ <P>Things I'd like to have: 
+ <ul>
+  <li>access to ELP 2000-85 for the Moon (see above).
+  <li>an expression for the inclination of the Moon's orbit, instead of a constant. 
+  This may be in Mathematical Astronomy Morsels, by Meeus.
+ </ul>
+</body>
+</html>

@@ -1,0 +1,281 @@
+
+
+% dict month-name
+/weekly-cell {
+  6 dict begin
+     % the size of the cells containing daily and weekly data  
+    /cell-dx 100 pct-wd def
+    /cell-dy  25 pct-ht def
+    /month-name exch def
+    /data exch def
+    % the little box for the month-name
+    /little-y cell-dy 75 pct def
+    /little-dx cell-dx 25 pct def
+    /little-dy cell-dy 25 pct def
+    { 0 3 cell-dy mul translate       % lower left corner of the cell
+      0 0 cell-dx cell-dy rectstroke    % overall rectangle for the cell
+      % details for the Sun are at the bottom of the cell, and have the same origin as the cell
+      data (sun-details) get    cell-dx    cell-dy 12 pct   sun-details   
+      
+      % median daily high temperature appears on the right of the cell
+      {cell-dx 94 pct   cell-dy 12 pct   translate
+       data (daily-high) get 
+       cell-dx 6 pct   cell-dy 88 pct
+       temperature-daily-high} draw
+      
+      % TO-DO:cloudiness?, windspeed?
+      
+      %  the month appears in the top left corner of the cell
+      {0 little-y translate                         
+      month-name little-dx 0.1 mul little-dy 0.4 mul moveto show} draw
+  
+      % quotation in the middle of the cell  
+      {cell-dx 0.05 mul 0.7 cell-dy mul translate 
+       data (quote) get quotation} draw
+      
+    } draw
+  end
+} def
+
+
+% dict (with quote data)
+% emit a quotation (prose or poem)
+/quotation {
+2 dict begin
+  /data exch def
+  /font-size 65 def
+  {font-size regular-font
+   data (text) get   data (is-poem) known  break-text-into-lines
+   % the author's name and the title of the work are both optional   
+   0 exch moveto  % the final yline is on the stack, and we use it here 
+   data (author) known {
+     (  ) show data (author) get small-caps-show 
+   } if
+   data (title) known {
+     ( ) show font-size italic-font data (title) get show
+   } if
+  } draw
+end 
+} def
+
+% dict dx dy
+% graph the median daily high temperature, plus the 'expected' range thereof
+/temperature-daily-high {
+10 dict begin
+  /dy exch def
+  /dx exch def
+  /data exch def
+  /full-range 30 def % degrees
+  
+  /bottom-temp data (median) get full-range 2 div sub def  % decimal degrees
+  % translate a temperature into a y-coordinate 
+  /temperature-to-y {
+    bottom-temp sub dy mul full-range div      % y = (T - bottom) * dy * 1/full-range
+  } def
+  % clip-path for the vertical scale; this resets the current path as well
+  { % overall rectangle
+    0 0 moveto
+    dx 0 rlineto
+    0 dy rlineto
+    dx neg 0 rlineto
+    closepath
+    0.25 setlinewidth
+    clip   % clip the scale numbers at the top and bottom
+    stroke
+    % tick marks and numbers for the temperature scale
+    /big-tick dx 25 pct def
+    /small-tick big-tick 50 pct def
+    bottom-temp floor cvi   1   bottom-temp full-range add {  % loop from bottom-temp to bottom+full-range
+      /deg exch def
+      newpath
+        0 deg temperature-to-y moveto
+        deg 5 mod 0 eq {big-tick}{small-tick}ifelse 0 rlineto % short/long tick for this degree
+      stroke
+      % show the number of degrees, if divisible by 5
+      deg 5 mod 0 eq {
+        dx 55 pct   deg temperature-to-y  moveto  % I'm just eye-balling the y-level here CHANGE THE 5 TO A PCT; USE PROPER CENTERING!
+        50 regular-font
+        deg sbuff cvs show-ctr-xy
+        /degree glyphshow
+      } if      
+    } for
+  } draw
+  { % the vertical bar that shows the median daily high temperature, and the 'expected range' +/-
+    /bar-width dx 30 pct neg def                                     
+    0.8 setgray
+    0 
+    data (range-low) get temperature-to-y  
+    bar-width 
+    data (range-hi) get temperature-to-y  
+    data (range-low) get temperature-to-y  
+    sub
+    rectfill
+  } draw
+  { % the horizontal tick for the actual median-high
+    0 data (median) get temperature-to-y moveto
+    bar-width 0 rlineto
+    stroke
+  } draw
+end
+} def
+
+
+% data-dict dx dy
+% hard-coded: fixed times for the start and end of the time period 03h-21h (18hours in total)
+/sun-details {
+15 dict begin
+  /dy exch def
+  /dx  exch def
+  /data exch def
+  
+  /start-hour 3 def
+  /end-hour 21 def
+  /hours-width end-hour start-hour sub def
+  
+  % hours (decimal) is passed
+  /hour-to-x {
+    start-hour sub hours-width div dx mul
+  } def
+  
+  % light grey rectangles for sunrise and sunset
+  { 0.8 setgray
+    0 0  data (rise-hour) get hour-to-x   dy  rectfill
+    data (set-hour) get hour-to-x   0
+    end-hour data (set-hour) get sub hours-width div dx mul   dy   rectfill
+  } draw
+
+  % vertical line for every 1/2 hour, in the given range of hours
+  % begin-it end-it (hours; can be decimal!)
+  /ticks-for-half-hours {
+    /end-it exch def  
+    /begin-it exch def
+    begin-it  0.5  end-it {   % half-hour intervals; hence 2/0.5/12; non-integral!
+      /hours exch def
+      { hours hour-to-x dy moveto    % where to draw down from
+        hours hours floor sub 0 eq {1 setlinewidth} {0.25 setlinewidth} ifelse
+        0    dy 30 pct neg    rlineto    % vertical  line
+        stroke
+      }  draw 
+       % show the number of hours
+       hours hours floor sub 0 eq {
+         { 50 regular-font
+           hours hour-to-x  dy 25 pct  moveto
+           hours cvi sbuff cvs (h) concat-str show-ctr-x
+         } draw
+       } if
+    }
+    for
+  } def
+  3.5 8 ticks-for-half-hours  % morning
+  16 20.5 ticks-for-half-hours % evening
+
+  % middle part: transit time, and the altitude of the Sun above the horizon at transit
+  {12 hour-to-x   dy 35 pct   moveto
+   data (transit-time) get  (  )  concat-str  data (transit-altitude) get sbuff cvs   concat-str  % the string to show
+   show-ctr-x
+   /degree glyphshow
+  
+    9 hour-to-x   dy 30 pct moveto 
+    /sun glyphshow  %                REPLACE THIS WITH A DRAWING PROC AT THE CURRENTPOINT - 2 LINES PLUS A CIRCLE
+  } draw
+  
+  % azimuth of the sun's rise and set
+  %{0 dy translate
+  % data (rise-az) get 6 hour-to-x sun-azimuth} draw
+  { 0 dy translate
+    data (rise-az) get   6 hour-to-x   dx 35 pct   dy   sun-azimuth
+  } draw
+  
+  % overall rectangle for this block of data (done last, to overwrite other drawings)
+  0 0 dx dy rectstroke
+end 
+} def
+
+% show a horizontal scale indicating the Sun's azimuth at time of rise.
+% this is hard-coded to the east; showing the same thing in the west is redundant.
+% the indicator simply re-uses the bold tick mark for 6h.
+% the indicator remains in place, while the scale 'slides' horizontally in order to indicate the desired value.
+% uses a clipping region
+% input: az-phenom x-base dx dy 
+/sun-azimuth {
+10 dict begin
+  /dy exch def
+  /dx exch def
+  /x-base exch def  % the 6hr place
+  /az-phenom exch def 
+  % constants:
+  /dx-per-deg dx 86 div def
+  /az-width 40 def    % degrees plus/minus from the East point (x-base)
+  % map an azimuth to an x-coord
+  /az-to-x {
+    az-phenom sub dx-per-deg mul x-base add
+  } def
+  % map an azimuth to the value actually marked; we take the zero as East (90 deg)
+  % positive means south of East; returns a string 
+  /az-to-delta {
+    90 sub /val exch def
+    val 0 eq {(E)} {val sbuff cvs} ifelse
+  } def
+  % the overall box for this graphic
+  0 0 moveto
+  dx 0 rlineto
+  0 dy rlineto
+  dx neg 0 rlineto
+  closepath
+  clip  % use this same box as a clipping region 
+  stroke
+  % loop over degrees to show the azimuth scale; the start-stop and step are all multiples of 5
+  az-phenom az-width sub 5 nearest    5     az-phenom az-width add 5 nearest {
+    { /az exch def
+      0.25 setlinewidth
+      50 regular-font
+      az az-to-x 0 moveto
+      az 10 mod 0 eq 
+        {0 dy 0.4 mul rlineto}   % tick mark
+        {0 dy 0.25 mul rlineto}
+        ifelse
+      stroke
+      az 10 mod 0 eq {
+        % number above the tick mark
+        az az-to-x    dy 60 pct   moveto
+        az az-to-delta   show-ctr-x
+      }
+      if
+    } draw
+  } for
+  % a small triangular affordance to let the reader know 'where to look' for the azimuth value
+  /tick dy 15 pct def
+  newpath
+    x-base tick moveto     % apex of wee triangle
+    tick neg tick neg  rlineto  % bottom left
+    tick 2 mul 0 rlineto        % bottom right
+    closepath
+  fill
+end 
+} def
+
+
+
+
+ << 
+    (quote) <<
+      (text) (Dixon liked and revered him for his air of detesting everything that presented itself to his senses, and of not meaning to let this detestation become staled by custom.)
+      (author) (KINGSLEY AMIS)
+      (title) (Lucky Jim) 
+    >>
+    (daily-high) << 
+      (median) -2.3
+      (range-hi) 7.3
+      (range-low) -12.2
+    >>
+    (sun-details) <<
+      (transit-altitude) 20.7
+      (transit-time) (12:16:42)
+      (transit-time-decimal) 12.05
+      (set-hour) 16.43
+      (rise-az) 122.0
+      (rise-hour) 7.75
+    >>
+ >>
+ (November) weekly-cell
+
